@@ -1,0 +1,6 @@
+flask
+flask-sqlalchemy
+werkzeug
+requests
+chromadb
+pymupdf

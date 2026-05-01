@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAG Serena</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --purple:      #6B2FD9;
+      --purple2:     #7B3FE4;
+      --purple-dark: #3d1a7a;
+      --yellow:      #FFD600;
+      --teal:        #00C9B1;
+      --pink:        #FF4B8B;
+      --white:       #FFFFFF;
+      --offwhite:    #F5F0FF;
+      --text:        #1a1a2e;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--purple);
+      color: var(--white);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HEADER */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      height: 58px;
+      background: var(--purple-dark);
+      flex-shrink: 0;
+      border-bottom: 3px solid #000;
+    }
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem;
+      letter-spacing: 0.05em;
+      color: var(--white);
+      line-height: 1;
+    }
+    .logo span { color: var(--yellow); }
+    .header-right { display: flex; align-items: center; gap: 0.8rem; }
+    #user-label { font-size: 0.78rem; font-weight: 700; color: var(--teal); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 0.45rem 1rem;
+      border-radius: 50px;
+      border: 2.5px solid #000;
+      cursor: pointer;
+      transition: all 0.12s;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      box-shadow: 3px 3px 0 #000;
+    }
+    .btn:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 #000; }
+    .btn-yellow { background: var(--yellow); color: #000; }
+    .btn-yellow:hover { background: #ffe033; }
+    .btn-teal { background: var(--teal); color: #000; }
+    .btn-teal:hover { background: #00dcc4; }
+    .btn-ghost { background: transparent; color: var(--white); border-color: rgba(255,255,255,0.35); box-shadow: none; }
+    .btn-ghost:hover { border-color: var(--white); }
+    .btn-danger { background: var(--pink); color: #fff; border-color: #000; box-shadow: 2px 2px 0 #000; font-size: 0.68rem; padding: 0.22rem 0.55rem; border-radius: 50px; }
+    .btn-danger:hover { background: #ff1f6b; }
+
+    /* LAYOUT */
+    .app-layout { display: flex; flex: 1; overflow: hidden; }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 270px;
+      flex-shrink: 0;
+      background: var(--purple-dark);
+      border-right: 3px solid #000;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-section { padding: 1rem; border-bottom: 2px solid rgba(0,0,0,0.3); }
+    .sidebar-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem;
+      letter-spacing: 0.1em;
+      color: var(--yellow);
+      margin-bottom: 0.7rem;
+    }
+
+    .upload-area {
+      border: 2.5px dashed rgba(255,255,255,0.3);
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.18s;
+      background: rgba(255,255,255,0.05);
+    }
+    .upload-area:hover { border-color: var(--yellow); background: rgba(255,214,0,0.08); }
+    .upload-area.dragover { border-color: var(--yellow); background: rgba(255,214,0,0.12); }
+    .upload-area p { font-size: 0.78rem; color: rgba(255,255,255,0.65); line-height: 1.5; }
+    .upload-area span { color: var(--yellow); font-weight: 700; }
+    #file-input { display: none; }
+
+    .upload-progress { display: none; margin-top: 0.6rem; }
+    .progress-bar { height: 4px; background: rgba(255,255,255,0.15); border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--yellow); width: 0%; transition: width 0.3s; }
+    .upload-status { font-size: 0.72rem; color: var(--teal); margin-top: 0.4rem; text-align: center; font-weight: 700; }
+
+    .docs-list { flex: 1; overflow-y: auto; padding: 0.6rem; }
+    .docs-list::-webkit-scrollbar { width: 4px; }
+    .docs-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 99px; }
+
+    .doc-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0.8rem;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-bottom: 0.4rem;
+      transition: all 0.12s;
+      border: 2px solid transparent;
+      background: rgba(255,255,255,0.05);
+    }
+    .doc-item:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+    .doc-item.active { background: var(--yellow); border-color: #000; box-shadow: 3px 3px 0 #000; }
+    .doc-item.active .doc-name { color: #000; }
+    .doc-item.active .doc-meta { color: rgba(0,0,0,0.55); }
+    .doc-info { flex: 1; overflow: hidden; }
+    .doc-name { font-size: 0.78rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .doc-meta { font-size: 0.64rem; color: rgba(255,255,255,0.45); margin-top: 0.1rem; }
+
+    .empty-docs { padding: 1.5rem 1rem; text-align: center; font-size: 0.8rem; color: rgba(255,255,255,0.35); line-height: 1.6; }
+
+    /* CHAT */
+    .chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--offwhite); }
+
+    .chat-header {
+      padding: 0.7rem 1.2rem;
+      border-bottom: 3px solid #000;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-shrink: 0;
+      background: var(--teal);
+    }
+    .chat-doc-badge {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 0.85rem;
+      background: #000;
+      color: var(--yellow);
+      border-radius: 50px;
+      padding: 0.1rem 0.7rem;
+      letter-spacing: 0.06em;
+    }
+    .chat-doc-name { font-size: 0.85rem; font-weight: 700; color: #000; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-thumb { background: rgba(107,47,217,0.25); border-radius: 99px; }
+
+    .message { max-width: 78%; animation: popIn 0.25s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.88) translateY(6px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .message.user { align-self: flex-end; }
+    .message.assistant { align-self: flex-start; }
+
+    .message-role { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.3rem; }
+    .message.user .message-role { text-align: right; color: var(--purple); }
+    .message.assistant .message-role { color: var(--purple-dark); }
+
+    .message-bubble {
+      padding: 0.8rem 1rem;
+      border-radius: 16px;
+      font-size: 0.85rem;
+      line-height: 1.65;
+      border: 2.5px solid #000;
+    }
+    .message.user .message-bubble { background: var(--purple); color: #fff; border-bottom-right-radius: 4px; box-shadow: 3px 3px 0 #000; }
+    .message.assistant .message-bubble { background: #fff; color: var(--text); border-bottom-left-radius: 4px; box-shadow: 3px 3px 0 rgba(0,0,0,0.12); }
+
+    .thinking { display: flex; gap: 5px; padding: 0.9rem 1rem; }
+    .thinking span { width: 8px; height: 8px; border-radius: 50%; border: 2px solid #000; animation: bounce 1.1s ease-in-out infinite; }
+    .thinking span:nth-child(1) { background: var(--purple); }
+    .thinking span:nth-child(2) { background: var(--teal); animation-delay: 0.2s; }
+    .thinking span:nth-child(3) { background: var(--yellow); animation-delay: 0.4s; }
+    @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-10px)} }
+
+    .welcome { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1rem; text-align:center; padding:2rem; }
+    .welcome-blob { width:80px; height:80px; background:var(--teal); border-radius:40% 60% 70% 30%/40% 50% 60% 50%; border:3px solid #000; box-shadow:4px 4px 0 #000; animation:blob 4s ease-in-out infinite; }
+    @keyframes blob { 0%,100%{border-radius:40% 60% 70% 30%/40% 50% 60% 50%} 50%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%} }
+    .welcome-title { font-family:'Bebas Neue',sans-serif; font-size:4rem; color:var(--purple); line-height:1; letter-spacing:0.04em; }
+    .welcome-title span { color:var(--pink); }
+    .welcome p { font-size:0.9rem; color:var(--purple-dark); max-width:300px; font-weight:500; }
+
+    .input-area {
+      padding: 0.8rem 1.2rem;
+      border-top: 3px solid #000;
+      display: flex;
+      gap: 0.7rem;
+      align-items: flex-end;
+      flex-shrink: 0;
+      background: var(--white);
+    }
+    #query-input {
+      flex: 1;
+      background: var(--offwhite);
+      border: 2.5px solid #000;
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      padding: 0.7rem 1rem;
+      resize: none;
+      min-height: 44px;
+      max-height: 110px;
+      outline: none;
+      transition: box-shadow 0.15s;
+      font-weight: 500;
+    }
+    #query-input:focus { box-shadow: 3px 3px 0 var(--purple); border-color: var(--purple); }
+    #query-input::placeholder { color: #aaa; }
+
+    .send-btn {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: var(--purple);
+      border: 2.5px solid #000;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 3px 3px 0 #000;
+      flex-shrink: 0;
+      transition: all 0.12s;
+    }
+    .send-btn:hover { background: var(--purple2); transform: translate(-1px,-1px); box-shadow: 4px 4px 0 #000; }
+    .send-btn:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 #000; }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: 3px 3px 0 #000; }
+    .send-btn svg { width: 18px; height: 18px; fill: #fff; }
+
+    /* OVERLAY */
+    .overlay {
+      position: fixed; inset: 0;
+      background: var(--purple);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+      overflow: hidden;
+    }
+    .overlay.hidden { display: none; }
+    .overlay::before {
+      content: '';
+      position: absolute;
+      width: 320px; height: 320px;
+      background: var(--teal);
+      top: -100px; right: -80px;
+      border-radius: 40% 60% 55% 45%;
+      border: 3px solid rgba(0,0,0,0.2);
+    }
+    .overlay::after {
+      content: '';
+      position: absolute;
+      width: 220px; height: 220px;
+      background: var(--yellow);
+      bottom: -60px; left: -50px;
+      border-radius: 60% 40% 45% 55%;
+      border: 3px solid rgba(0,0,0,0.2);
+    }
+
+    .modal {
+      background: #fff;
+      border: 3px solid #000;
+      border-radius: 20px;
+      padding: 2rem;
+      width: 100%;
+      max-width: 380px;
+      position: relative;
+      z-index: 1;
+      box-shadow: 8px 8px 0 #000;
+      animation: modalPop 0.3s cubic-bezier(.34,1.56,.64,1);
+    }
+    .modal.hidden { display: none; }
+    @keyframes modalPop { from{opacity:0;transform:scale(0.8) rotate(-2deg)} to{opacity:1;transform:scale(1) rotate(0deg)} }
+
+    .modal-dot { position:absolute; top:-14px; right:20px; width:28px; height:28px; background:var(--yellow); border:3px solid #000; border-radius:50%; box-shadow:3px 3px 0 #000; }
+
+    .modal h2 { font-family:'Bebas Neue',sans-serif; font-size:2.4rem; color:var(--text); margin-bottom:0.1rem; letter-spacing:0.04em; line-height:1; }
+    .modal h2 span { color:var(--purple); }
+    .modal > p { font-size:0.8rem; color:#666; margin-bottom:1.4rem; font-weight:500; }
+
+    .form-group { margin-bottom:0.9rem; }
+    .form-group label { display:block; font-size:0.68rem; font-weight:700; color:var(--text); margin-bottom:0.35rem; letter-spacing:0.08em; text-transform:uppercase; }
+    .form-group input {
+      width:100%;
+      background:var(--offwhite);
+      border:2.5px solid #000;
+      border-radius:10px;
+      color:var(--text);
+      font-family:'DM Sans',sans-serif;
+      font-size:0.85rem;
+      padding:0.65rem 0.9rem;
+      outline:none;
+      transition:box-shadow 0.15s;
+      font-weight:500;
+    }
+    .form-group input:focus { box-shadow:3px 3px 0 var(--purple); border-color:var(--purple); }
+
+    .modal-footer { margin-top:1.3rem; }
+    .modal-footer .btn { width:100%; padding:0.8rem; font-size:0.9rem; border-radius:12px; }
+
+    .switch-link { text-align:center; font-size:0.78rem; color:#666; margin-top:1rem; font-weight:500; }
+    .switch-link a { color:var(--purple); cursor:pointer; font-weight:700; text-decoration:none; }
+    .switch-link a:hover { text-decoration:underline; }
+
+    .error-msg { font-size:0.75rem; color:#e00; margin-top:0.5rem; display:none; font-weight:600; }
+  </style>
+</head>
+<body>
+
+<!-- AUTH OVERLAY -->
+<div class="overlay" id="auth-overlay">
+  <div class="modal" id="login-modal">
+    <div class="modal-dot"></div>
+    <h2>RAG <span>Serena</span></h2>
+    <p>Inicia sesión para continuar</p>
+    <div class="form-group"><label>Usuario</label><input type="text" id="login-username" placeholder="tu usuario" /></div>
+    <div class="form-group"><label>Contraseña</label><input type="password" id="login-password" placeholder="••••••••" /></div>
+    <p class="error-msg" id="login-error"></p>
+    <div class="modal-footer"><button class="btn btn-yellow" onclick="doLogin()">Entrar →</button></div>
+    <p class="switch-link">¿No tienes cuenta? <a onclick="showRegister()">Regístrate</a></p>
+  </div>
+
+  <div class="modal hidden" id="register-modal">
+    <div class="modal-dot" style="background:var(--teal)"></div>
+    <h2>Crear <span>cuenta</span></h2>
+    <p>Únete a RAG Serena</p>
+    <div class="form-group"><label>Usuario</label><input type="text" id="reg-username" placeholder="tu usuario" /></div>
+    <div class="form-group"><label>Email</label><input type="email" id="reg-email" placeholder="tu@email.com" /></div>
+    <div class="form-group"><label>Contraseña</label><input type="password" id="reg-password" placeholder="••••••••" /></div>
+    <p class="error-msg" id="reg-error"></p>
+    <div class="modal-footer"><button class="btn btn-teal" onclick="doRegister()">Registrarse →</button></div>
+    <p class="switch-link">¿Ya tienes cuenta? <a onclick="showLogin()">Inicia sesión</a></p>
+  </div>
+</div>
+
+<!-- APP -->
+<header>
+  <div class="logo">RAG <span>Serena</span></div>
+  <div class="header-right">
+    <span id="user-label"></span>
+    <button class="btn btn-ghost" onclick="doLogout()">Salir</button>
+  </div>
+</header>
+
+<div class="app-layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Subir PDF</div>
+      <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+        <input type="file" id="file-input" accept=".pdf" />
+        <p>Arrastra o <span>selecciona</span> un PDF</p>
+      </div>
+      <div class="upload-progress" id="upload-progress">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <div class="upload-status" id="upload-status">Indexando...</div>
+      </div>
+    </div>
+    <div class="sidebar-section" style="border-bottom:none;padding-bottom:0.4rem;">
+      <div class="sidebar-label">Documentos</div>
+    </div>
+    <div class="docs-list" id="docs-list">
+      <div class="empty-docs">Sube un PDF para<br/>empezar a chatear</div>
+    </div>
+  </aside>
+
+  <main class="chat-area">
+    <div class="chat-header" id="chat-header" style="display:none;">
+      <div class="chat-doc-badge">PDF</div>
+      <div class="chat-doc-name" id="chat-doc-name">—</div>
+    </div>
+    <div class="messages" id="messages">
+      <div class="welcome" id="welcome-screen">
+        <div class="welcome-blob"></div>
+        <div class="welcome-title">RAG <span>Serena</span></div>
+        <p>Sube un PDF y hazle cualquier pregunta. Tu asistente de documentos.</p>
+      </div>
+    </div>
+    <div class="input-area">
+      <textarea id="query-input" placeholder="Pregunta algo sobre el documento..." rows="1"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendQuery()" disabled>
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </main>
+</div>
+
+<script>
+  let selectedDocId = null;
+
+  async function checkAuth() {
+    const r = await fetch("/api/me");
+    const d = await r.json();
+    if (d.logged) {
+      document.getElementById("auth-overlay").classList.add("hidden");
+      document.getElementById("user-label").textContent = d.username;
+      loadDocuments();
+    }
+  }
+
+  function showRegister() {
+    document.getElementById("login-modal").classList.add("hidden");
+    document.getElementById("register-modal").classList.remove("hidden");
+  }
+  function showLogin() {
+    document.getElementById("register-modal").classList.add("hidden");
+    document.getElementById("login-modal").classList.remove("hidden");
+  }
+
+  async function doLogin() {
+    const username = document.getElementById("login-username").value.trim();
+    const password = document.getElementById("login-password").value;
+    const err = document.getElementById("login-error");
+    err.style.display = "none";
+    const r = await fetch("/api/login", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({username,password}) });
+    const d = await r.json();
+    if (d.ok) { document.getElementById("auth-overlay").classList.add("hidden"); document.getElementById("user-label").textContent = d.username; loadDocuments(); }
+    else { err.textContent = d.error; err.style.display = "block"; }
+  }
+
+  async function doRegister() {
+    const username = document.getElementById("reg-username").value.trim();
+    const email    = document.getElementById("reg-email").value.trim();
+    const password = document.getElementById("reg-password").value;
+    const err = document.getElementById("reg-error");
+    err.style.display = "none";
+    const r = await fetch("/api/register", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({username,email,password}) });
+    const d = await r.json();
+    if (d.ok) { document.getElementById("auth-overlay").classList.add("hidden"); document.getElementById("user-label").textContent = d.username; loadDocuments(); }
+    else { err.textContent = d.error; err.style.display = "block"; }
+  }
+
+  async function doLogout() { await fetch("/api/logout",{method:"POST"}); location.reload(); }
+
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Enter") return;
+    if (!document.getElementById("login-modal").classList.contains("hidden")) doLogin();
+    else if (!document.getElementById("register-modal").classList.contains("hidden")) doRegister();
+  });
+
+  const uploadArea = document.getElementById("upload-area");
+  const fileInput  = document.getElementById("file-input");
+  uploadArea.addEventListener("dragover", e => { e.preventDefault(); uploadArea.classList.add("dragover"); });
+  uploadArea.addEventListener("dragleave", () => uploadArea.classList.remove("dragover"));
+  uploadArea.addEventListener("drop", e => { e.preventDefault(); uploadArea.classList.remove("dragover"); if(e.dataTransfer.files[0]) uploadFile(e.dataTransfer.files[0]); });
+  fileInput.addEventListener("change", () => { if(fileInput.files[0]) uploadFile(fileInput.files[0]); });
+
+  async function uploadFile(file) {
+    if (!file.name.endsWith(".pdf")) return alert("Solo se aceptan PDFs");
+    const progress = document.getElementById("upload-progress");
+    const fill = document.getElementById("progress-fill");
+    const status = document.getElementById("upload-status");
+    progress.style.display = "block"; fill.style.width = "30%"; status.textContent = "Extrayendo texto...";
+    const form = new FormData(); form.append("file", file);
+    try {
+      fill.style.width = "60%"; status.textContent = "Generando embeddings...";
+      const r = await fetch("/api/upload", {method:"POST", body:form});
+      const d = await r.json();
+      fill.style.width = "100%";
+      if (d.ok) { status.textContent = `✓ ${d.chunks} chunks`; setTimeout(()=>{progress.style.display="none";fill.style.width="0%"},2000); loadDocuments(); }
+      else status.textContent = "Error: " + d.error;
+    } catch(e) { status.textContent = "Error de conexión"; }
+  }
+
+  async function loadDocuments() {
+    const r = await fetch("/api/documents");
+    const docs = await r.json();
+    const list = document.getElementById("docs-list");
+    if (!docs.length) { list.innerHTML = '<div class="empty-docs">Sube un PDF para<br/>empezar a chatear</div>'; return; }
+    list.innerHTML = docs.map(d => `
+      <div class="doc-item ${d.id===selectedDocId?'active':''}" onclick="selectDoc(${d.id},'${d.filename.replace(/'/g,"\\'")}')">
+        <div class="doc-info">
+          <div class="doc-name">${d.filename}</div>
+          <div class="doc-meta">${d.chunks} chunks</div>
+        </div>
+        <button class="btn btn-danger" onclick="event.stopPropagation();deleteDoc(${d.id})">✕</button>
+      </div>`).join("");
+  }
+
+  async function selectDoc(id, name) {
+    selectedDocId = id;
+    document.getElementById("send-btn").disabled = false;
+    document.getElementById("chat-header").style.display = "flex";
+    document.getElementById("chat-doc-name").textContent = name;
+    await loadDocuments();
+    const msgs = document.getElementById("messages");
+    msgs.innerHTML = "";
+    const history = await (await fetch(`/api/history/${id}`)).json();
+    if (!history.length) {
+      msgs.innerHTML = `<div class="welcome" id="welcome-screen"><div class="welcome-blob"></div><div class="welcome-title" style="font-size:2.5rem">${name}</div><p>El documento está listo. Hazme cualquier pregunta.</p></div>`;
+    } else {
+      history.forEach(m => addMessage(m.role, m.content, false));
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+  }
+
+  async function deleteDoc(id) {
+    if (!confirm("¿Eliminar este documento?")) return;
+    await fetch(`/api/documents/${id}`, {method:"DELETE"});
+    if (selectedDocId === id) {
+      selectedDocId = null;
+      document.getElementById("send-btn").disabled = true;
+      document.getElementById("chat-header").style.display = "none";
+      document.getElementById("messages").innerHTML = `<div class="welcome" id="welcome-screen"><div class="welcome-blob"></div><div class="welcome-title">RAG <span>Serena</span></div><p>Sube un PDF y hazle cualquier pregunta.</p></div>`;
+    }
+    loadDocuments();
+  }
+
+  function addMessage(role, content, animate=true) {
+    document.getElementById("welcome-screen")?.remove();
+    const msgs = document.getElementById("messages");
+    const div = document.createElement("div");
+    div.className = `message ${role}`;
+    div.innerHTML = `<div class="message-role">${role==="user"?"Tú":"RAG Serena"}</div><div class="message-bubble">${content.replace(/\n/g,"<br/>")}</div>`;
+    if (!animate) div.style.animation = "none";
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function addThinking() {
+    document.getElementById("welcome-screen")?.remove();
+    const msgs = document.getElementById("messages");
+    const div = document.createElement("div");
+    div.className = "message assistant"; div.id = "thinking-bubble";
+    div.innerHTML = `<div class="message-bubble thinking"><span></span><span></span><span></span></div>`;
+    msgs.appendChild(div); msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  async function sendQuery() {
+    const input = document.getElementById("query-input");
+    const query = input.value.trim();
+    if (!query || !selectedDocId) return;
+    input.value = ""; input.style.height = "auto";
+    document.getElementById("send-btn").disabled = true;
+    addMessage("user", query); addThinking();
+    try {
+      const r = await fetch("/api/chat", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({query,doc_id:selectedDocId}) });
+      const d = await r.json();
+      document.getElementById("thinking-bubble")?.remove();
+      addMessage("assistant", d.answer || "Error: " + d.error);
+    } catch(e) {
+      document.getElementById("thinking-bubble")?.remove();
+      addMessage("assistant","Error de conexión.");
+    }
+    document.getElementById("send-btn").disabled = false;
+  }
+
+  const queryInput = document.getElementById("query-input");
+  queryInput.addEventListener("input", () => { queryInput.style.height="auto"; queryInput.style.height=queryInput.scrollHeight+"px"; });
+  queryInput.addEventListener("keydown", e => { if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendQuery();} });
+
+  checkAuth();
+</script>
+</body>
+</html>
