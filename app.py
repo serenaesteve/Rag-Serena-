@@ -160,7 +160,7 @@ RESPUESTA:"""
         "prompt": prompt,
         "stream": False,
         "options": {"temperature": 0.2}
-    }, timeout=120)
+    }, timeout=999)
     r.raise_for_status()
     return r.json()["response"].strip()
 
